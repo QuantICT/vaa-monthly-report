@@ -1,5 +1,13 @@
 import ExcelJS from "exceljs";
-import { uniqueSheetName, numeric, textValue, causeLabels } from "./values.js";
+import {
+  uniqueSheetName,
+  numeric,
+  textValue,
+  causeLabels,
+  callerNumber,
+  brusselsExcelDate,
+  excelDuration,
+} from "./values.js";
 const detailColumns = [
   ["id", "Session ID", 38],
   ["caller", "Caller", 22],
@@ -8,19 +16,16 @@ const detailColumns = [
   ["tenantname", "Tenant name", 28],
   ["treeid", "Tree ID", 38],
   ["treename", "Tree name", 28],
-  ["start", "Start (epoch seconds)", 25],
-  ["duration", "Duration (seconds)", 22],
+  ["start", "Start (Europe/Brussels)", 25, "dd/mm/yyyy hh:mm"],
+  ["duration", "Duration", 18, "[hh]:mm:ss"],
   ["blockread", "Blocks read", 16],
   ["cause", "End cause", 14],
   ["causeLabel", "End cause description", 28],
-  ["gcid", "Global call ID", 38],
-  ["cdin", "Correlator data in", 35],
-  ["cdout", "Correlator data out", 35],
   ["transferredto", "Transferred to", 22],
   ["forwardednumber", "Forwarded number", 22],
   ["reinvitednumber", "Reinvited number", 22],
 ];
-const numericKeys = new Set(["start", "duration", "blockread", "cause"]);
+const numericKeys = new Set(["blockread", "cause"]);
 function addSheet(report, name, columns) {
   const sheet = report.workbook.addWorksheet(
     uniqueSheetName(name, report.names),
@@ -29,10 +34,11 @@ function addSheet(report, name, columns) {
       properties: { defaultRowHeight: 19.5 },
     },
   );
-  sheet.columns = columns.map(([key, header, width]) => ({
+  sheet.columns = columns.map(([key, header, width, numFmt]) => ({
     key,
     header,
     width,
+    ...(numFmt ? { style: { numFmt } } : {}),
   }));
   sheet.autoFilter = {
     from: { row: 1, column: 1 },
@@ -111,9 +117,15 @@ export function addDetails(sheet, rows) {
       detailColumns.map(([key]) =>
         key === "causeLabel"
           ? causeLabels.get(Number(source.cause)) || `Other (${source.cause})`
-          : numericKeys.has(key)
-            ? numeric(source[key])
-            : textValue(source[key]),
+          : key === "caller"
+            ? callerNumber(source[key])
+            : key === "start"
+              ? brusselsExcelDate(source[key])
+              : key === "duration"
+                ? excelDuration(source[key])
+                : numericKeys.has(key)
+                  ? numeric(source[key])
+                  : textValue(source[key]),
       ),
     );
   }
