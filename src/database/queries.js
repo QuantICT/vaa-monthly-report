@@ -57,9 +57,6 @@ SELECT
     WHEN d.cause IS NULL THEN 4
     ELSE d.cause
   END AS cause,
-  c.global_call_id AS gcid,
-  c.correlator_data_in AS cdin,
-  d.correlator_data_out AS cdout,
   d.transferred_to AS transferredTo,
   c.original_calling_number AS forwardedNumber,
   d.reinvited_caller_number AS reinvitedNumber
@@ -90,4 +87,4 @@ GROUP BY
   d.transferred_to,
   c.original_calling_number,
   d.reinvited_caller_number
-ORDER BY start DESC;`;
+ORDER BY start ASC, c.sessionId ASC;`;
